@@ -26,7 +26,7 @@
 ### 方式 A：git clone（推荐，以后好更新）
 
 ```bash
-sudo git clone https://github.com/YOUR_NAME/Old-Kindle-AI-Usage-Display.git /srv/kindle-dash
+sudo git clone https://github.com/pikipity/Old-Kindle-AI-Usage-Display.git /srv/kindle-dash
 sudo chown -R $USER:$USER /srv/kindle-dash
 ```
 
