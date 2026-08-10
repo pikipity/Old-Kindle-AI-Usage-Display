@@ -19,6 +19,9 @@ fi
 # 常亮运行：禁止自动休眠
 lipc-set-prop com.lab126.powerd preventScreenSaver 1
 
+# 关闭背光（0-24 档，0 = 熄灭；想保留背光就把 0 改成需要的亮度，或删掉这行）
+lipc-set-prop com.lab126.powerd flIntensity 0
+
 cd "$DASH" || exit 1
 nohup sh ./dashboard.sh >> "$DASH/dashboard.log" 2>&1 &
 echo "仪表盘已启动，日志：$DASH/dashboard.log"

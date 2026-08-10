@@ -15,6 +15,9 @@ fi
 
 lipc-set-prop com.lab126.powerd preventScreenSaver 0
 
+# 恢复背光到中等亮度（配合 start.sh 的关背光）
+lipc-set-prop com.lab126.powerd flIntensity 12
+
 # 清屏（找到 fbink 就用，找不到就算了，下次开屏系统会自己重绘）
 FBINK=""
 for p in "$(command -v fbink 2>/dev/null)" \
