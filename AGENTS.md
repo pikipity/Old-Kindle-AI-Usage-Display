@@ -87,9 +87,9 @@ Old-Kindle-AI-Usage-Display/
 ├── AGENTS.md                    # 本文件
 ├── config.env                   # ★ 唯一配置：入库、占位符、部署时手改
 ├── docs/
-│   ├── 1-jailbreak.md           # LanguageBreak 越狱指引 + 风险清单
-│   ├── 2-server-setup.md        # venv → config.env → nginx 5行 → PM2
-│   └── 3-kindle-setup.md        # fbink → 拷贝 → KUAL 启动
+│   ├── 1-jailbreak.md           # 详细越狱教程（大纲见 §9）
+│   ├── 2-server-setup.md        # 详细服务器安装教程
+│   └── 3-kindle-setup.md        # 详细 Kindle 端安装教程
 ├── server/
 │   ├── render.py
 │   ├── requirements.txt         # 仅 pillow
@@ -130,7 +130,42 @@ Old-Kindle-AI-Usage-Display/
 - 下部约 3/8：DEEPSEEK 面板——同上（充值/赠送明细）
 - 底部小字：最后更新时间 / 服务器数据异常 ⚠
 
-## 9. 实施顺序
+## 9. 安装教程大纲（docs/，必须详细到可照做）
+
+三篇教程面向"没越狱过 Kindle、只会在服务器上改网站"的用户，每篇都包含：前置条件清单、逐步命令/操作、每步的验证方法、常见错误对照表。
+
+### docs/1-jailbreak.md — Kindle 越狱
+
+- 风险清单与备份（恢复出厂、书籍/个人文档导出、云端书籍说明）
+- 前置检查：固件必须 ≤5.16.2.1.1、设备无密码锁、电量充足
+- LanguageBreak 逐步操作：文件拷贝 → 演示模式触发 → hotfix 安装 → 重启验证越狱成功
+- 安装 KUAL + MRPI
+- 安装 fbink
+- 屏蔽 OTA 更新（并强调：此后永不升级固件、永不恢复出厂）
+- 每步附官方指南（kindlemodding / MobileRead）对应链接，命令与界面提示要具体到菜单层级
+
+### docs/2-server-setup.md — 服务器端安装
+
+- 前置条件：已有跑在 80 端口的 nginx 站点、Python3、PM2、git
+- 上传代码（git clone 或 scp/sftp）到 `/srv/kindle-dash/`
+- venv 创建 + `pip install -r requirements.txt`
+- 安装中文字体（Noto Sans CJK 的各发行版包名）
+- 编辑 `config.env`（每项怎么填、Key 去哪申请、token 怎么生成）+ `git update-index --skip-worktree config.env`
+- 单次手动运行 `render.py` 验证出图（看 `out/dash.png`）
+- nginx：把 `nginx.conf.example` 片段并入现有 server 块 → `nginx -t` → reload → 浏览器访问图片 URL 验证
+- PM2：复制 ecosystem 模板、填解释器路径 → `pm2 start` → `pm2 save` → `pm2 logs` 验证每分钟出图
+- 排错表：API 401/余额字段缺失/字体找不到/权限问题/PM2 重启循环
+
+### docs/3-kindle-setup.md — Kindle 端安装
+
+- 前置条件：已越狱（docs/1）、已装 fbink
+- 用 USB 大容量模式拷贝文件：`kindle/dashboard.sh` + 根目录 `config.env` → `/mnt/us/dashboard/`；`kindle/kual/ai-dashboard/` → `/mnt/us/extensions/`
+- 在电脑上编辑 `config.env` 填 `IMAGE_URL`（强调用支持 LF 换行的编辑器，如 VS Code/Notepad++，别用 Windows 记事本旧版本）
+- 安全弹出 USB
+- KUAL 菜单启动仪表盘，验证刷屏；stop 恢复
+- 排错表：脚本无执行权限/路径错/wget 超时/屏幕残留系统 UI
+
+## 10. 实施顺序
 
 1. agent 写完全部代码与文档（本仓库骨架 + server/ + kindle/ + docs/）
 2. 用户部署服务器端，浏览器访问图片 URL 验证出图
@@ -138,7 +173,7 @@ Old-Kindle-AI-Usage-Display/
 4. 用户拷入 Kindle 端文件，KUAL 启动，联调
 5. 截图补进 README，开源发布（GitHub）
 
-## 10. 编码约定
+## 11. 编码约定
 
 - 代码、注释、提交信息、文档：docs 用中文，代码标识符英文，注释适量中文
 - 最小改动、最小依赖：服务器端仅 Pillow；Kindle 端纯 busybox shell + fbink，不引入 curl/jq/python
