@@ -273,7 +273,7 @@ pm2 set pm2-logrotate:retain 7        # 最多保留 7 份历史
 pm2 set pm2-logrotate:compress true   # 历史日志 gzip 压缩
 ```
 
-注意这是 PM2 全局设置，对你服务器上**其他 PM2 应用**的日志同样生效（一般正是你想要的）。想手动清空所有日志可以随时 `pm2 flush`。
+注意这是 PM2 全局设置，对你服务器上**其他 PM2 应用**的日志同样生效（一般正是你想要的）。想手动清空所有日志可以随时 `pm2 flush`。装完不用重启任何应用，`pm2-logrotate` 作为独立模块进程自动生效；以后改了上面的 `pm2 set` 配置，`pm2 restart pm2-logrotate` 一次让它立刻生效即可。
 
 ## 常见错误对照表
 
