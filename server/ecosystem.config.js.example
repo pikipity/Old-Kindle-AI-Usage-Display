@@ -1,0 +1,21 @@
+// PM2 配置模板
+// 用法：cp server/ecosystem.config.js.example ecosystem.config.js
+//      按需修改路径后 pm2 start ecosystem.config.js && pm2 save
+// 默认按仓库部署在 /srv/kindle-dash 写好，路径不同就改这三处
+module.exports = {
+  apps: [
+    {
+      name: "kindle-dash",
+      script: "/srv/kindle-dash/server/render.py",
+      interpreter: "/srv/kindle-dash/.venv/bin/python",
+      cwd: "/srv/kindle-dash",
+      env: {
+        DASH_CONFIG: "/srv/kindle-dash/config.env",
+      },
+      autorestart: true,       // 崩溃自动重启
+      restart_delay: 5000,     // 重启前等 5 秒，避免失控狂拉
+      max_restarts: 20,
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+    },
+  ],
+};

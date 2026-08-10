@@ -1,0 +1,16 @@
+# ============================================================
+# nginx 配置片段 —— 把本段加到你【现有 80 端口站点】的 server { } 块内
+# 这是本项目对 nginx 的唯一改动，不新开端口
+#
+# 步骤：
+#   1. 生成随机口令：  openssl rand -hex 8
+#   2. 把下面三处 YOUR_TOKEN 全部换成它（并保持 config.env 里 IMAGE_URL 一致）
+#   3. alias 路径指向本仓库的 out/ 目录（按你的实际部署路径改，结尾斜杠不能少）
+#   4. sudo nginx -t && sudo systemctl reload nginx
+#   5. 验证：浏览器访问 http://你的域名/kindle-dash-YOUR_TOKEN/dash.png 能看到图
+# ============================================================
+
+location ^~ /kindle-dash-YOUR_TOKEN/ {
+    alias /srv/kindle-dash/out/;
+    add_header Cache-Control "no-store";
+}

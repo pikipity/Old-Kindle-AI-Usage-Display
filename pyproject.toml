@@ -1,0 +1,12 @@
+[project]
+name = "kindle-dash"
+version = "0.1.0"
+description = "Kindle AI 用量仪表盘 · 服务器渲染端"
+requires-python = ">=3.9"
+dependencies = [
+    "pillow>=10.0",
+]
+
+# 这是个脚本项目，不需要打包安装自身；uv 只负责建环境、装依赖
+[tool.uv]
+package = false

@@ -1,0 +1,14 @@
+# 运行产物（config.env 按设计是入库的，不要在这里排除它）
+out/
+history.json
+*.log
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# 系统垃圾
+.DS_Store
+Thumbs.db

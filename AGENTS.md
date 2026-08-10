@@ -6,7 +6,7 @@
 
 把 Kindle Paperwhite 3（第 7 代，固件 5.16.2.1.1）改造为独立运行的桌面仪表盘：
 
-- **主体**：Kimi 开放平台余额、DeepSeek 余额（两大面板，占屏约 3/4）
+- **主体**：Kimi Code 订阅用量（本周额度 / 5h 窗口 / 加油包）、DeepSeek 余额（两大面板，占屏约 3/4）
 - **次要**：模拟表盘时钟 + 当月日历（顶部约 1/4）
 - 常亮插电运行，连家庭 WiFi，每分钟更新一次，脱离电脑
 
@@ -28,17 +28,17 @@
 
 | 平台 | 接口 | 认证 | 字段 |
 |---|---|---|---|
-| Kimi | `GET https://api.moonshot.cn/v1/users/me/balance` | Bearer Key | available / voucher / cash |
-| DeepSeek | `GET https://api.deepseek.com/user/balance` | Bearer Key | total / topped_up / granted |
+| Kimi Code（订阅） | `GET https://api.kimi.com/coding/v1/usages` | Bearer Key（Kimi Code 控制台签发，**与开放平台 Key 不通用**） | usage（本周 limit/remaining/resetTime）、limits（5h 窗口，`window.duration=300`）、boosterWallet（加油包，amountLeft 单位 1e-8 元） |
+| DeepSeek | `GET https://api.deepseek.com/user/balance` | Bearer Key | total / topped_up / granted（数值是字符串，granted 为未过期赠金） |
 
-- 展示口径：**余额 + 较昨日变化**（官方无用量明细 API，用户已确认接受）。服务器每天存一次快照到 `history.json`。
+- 展示口径：Kimi 面板 = 本周额度% + 进度条 + 5h 窗口 + 加油包；DeepSeek 面板 = 余额 + 构成 + **较昨日/今日变化**（官方无用量明细 API，服务器每天存一次快照到 `history.json` 算变化）。
 - **失败兜底分两层**：
-  - 服务器取数失败：渲染时沿用最近一次成功数据，该数据标灰 + 图内 ⚠ 角标，不黑屏。
+  - 服务器取数失败：渲染时沿用最近一次成功数据，面板右上角加 ⚠ 缓存角标（数据保持深色不标灰），不黑屏。
   - **Kindle 拉取失败（wget 失败/超时）**：显示本地缓存的上一张图，并用 fbink 在屏幕顶部叠加一行警告文字（如 `⚠ 更新失败 04:12`），下次成功拉取后警告自动消失。两级兜底互不相同：图内角标表示"服务器数据旧"，屏上叠字表示"Kindle 连不上服务器"。
 
 ## 4. 服务器端
 
-- 部署路径 `/srv/kindle-dash/`（clone 本仓库），Python venv，**仅装 Pillow**，HTTP 请求用标准库 urllib，不加多余依赖。
+- 部署路径 `/srv/kindle-dash/`（clone 本仓库），Python 环境用 **uv** 管理（根目录 `pyproject.toml` 声明依赖，`uv sync` 建 `.venv`，`uv.lock` 入库），**仅依赖 Pillow**，HTTP 请求用标准库 urllib，不加多余依赖。
 - `render.py`：单文件（约 200 行），常驻循环：每分钟整点对齐地 取数 → 渲染 1072×1448 灰度 PNG → 写 `out/dash.png`；异常时记日志不退出。
 - **PM2 托管**（用户已有 PM2，不用 cron）：`pm2 start ecosystem.config.js` → `pm2 save`，崩溃自重启、开机自启。
 - **nginx**：复用现有 HTTP 站点（80 端口、域名访问），在其 server 块中新增 5 行（**对现有配置的唯一改动**；不新开端口、不动安全组）：
@@ -58,7 +58,7 @@ location ^~ /kindle-dash-YOUR_TOKEN/ {
 
 ```bash
 # ---------- 服务器端必填 ----------
-KIMI_API_KEY=
+KIMI_CODE_API_KEY=
 DEEPSEEK_API_KEY=
 FONT_PATH=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
 # ---------- Kindle 端必填 ----------
@@ -92,9 +92,9 @@ Old-Kindle-AI-Usage-Display/
 │   └── 3-kindle-setup.md        # 详细 Kindle 端安装教程
 ├── server/
 │   ├── render.py
-│   ├── requirements.txt         # 仅 pillow
 │   ├── nginx.conf.example
 │   └── ecosystem.config.js.example
+├── pyproject.toml               # uv 依赖声明（仅 pillow）
 ├── kindle/
 │   ├── dashboard.sh             # 主循环 + 失败叠字告警
 │   └── kual/ai-dashboard/
@@ -125,10 +125,10 @@ Old-Kindle-AI-Usage-Display/
 
 竖屏 1072×1448，高对比黑白灰度，大色块少渐变，两米外可读：
 
-- 顶部约 1/4：模拟表盘时钟（左）+ 当月日历（右，今天圈出）
-- 中部约 3/8：KIMI 面板——超大字号余额 + 余额条 + 现金/代金券明细 + 较昨日变化
-- 下部约 3/8：DEEPSEEK 面板——同上（充值/赠送明细）
-- 底部小字：最后更新时间 / 服务器数据异常 ⚠
+- 顶部约 1/4：模拟表盘时钟（左）+ 当月日历（右，今天黑底标出）
+- 中部约 3/8：KIMI CODE 面板，三段式（细分隔线）：本周额度、5h 频限窗口各为"标签 + 已用百分比 + 进度条 + 重置时间"，加油包只显示余额
+- 下部约 3/8：DEEPSEEK 面板——超大字号余额 + 构成条（充值/赠送占比）+ 构成明细（含百分比）+ 变化（较昨日 ｜ 今日；`is_available` 为假时显示"余额不可用"角标）
+- 底部小字：渲染时间 / 数据异常提示；取数失败不标灰，仅右上角 ⚠ 角标
 
 ## 9. 安装教程大纲（docs/，必须详细到可照做）
 
@@ -148,7 +148,7 @@ Old-Kindle-AI-Usage-Display/
 
 - 前置条件：已有跑在 80 端口的 nginx 站点、Python3、PM2、git
 - 上传代码（git clone 或 scp/sftp）到 `/srv/kindle-dash/`
-- venv 创建 + `pip install -r requirements.txt`
+- 安装 uv（官方脚本）+ `uv sync` 建环境装依赖
 - 安装中文字体（Noto Sans CJK 的各发行版包名）
 - 编辑 `config.env`（每项怎么填、Key 去哪申请、token 怎么生成）+ `git update-index --skip-worktree config.env`
 - 单次手动运行 `render.py` 验证出图（看 `out/dash.png`）
