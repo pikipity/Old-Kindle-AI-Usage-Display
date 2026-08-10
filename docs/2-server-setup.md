@@ -262,6 +262,19 @@ pm2 logs kindle-dash
 
 至此服务器端部署完成。
 
+### 可选但建议：给 PM2 日志加轮转
+
+PM2 默认把日志追加写在 `~/.pm2/logs/` 里，**不限制大小也不轮转**。本项目的日志量很小（每分钟一行，一年约几十 MB），但长期裸奔没好处。装一个 `pm2-logrotate` 模块即可自动按大小切分、压缩、清理：
+
+```bash
+pm2 install pm2-logrotate
+pm2 set pm2-logrotate:max_size 10M    # 单个日志超过 10MB 就切分
+pm2 set pm2-logrotate:retain 7        # 最多保留 7 份历史
+pm2 set pm2-logrotate:compress true   # 历史日志 gzip 压缩
+```
+
+注意这是 PM2 全局设置，对你服务器上**其他 PM2 应用**的日志同样生效（一般正是你想要的）。想手动清空所有日志可以随时 `pm2 flush`。
+
 ## 常见错误对照表
 
 | 现象 | 可能原因 | 处理 |
