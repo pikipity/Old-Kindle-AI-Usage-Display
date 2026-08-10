@@ -104,6 +104,7 @@
 8. 拷贝完成后在电脑上弹出盘符，然后**按住 Kindle 电源键不放**，直到设备重启。
 9. 重启后出现语言选择界面：找到【简体中文】（位置大致在日语下方、`Pseudot` 上方，分栏布局可能略有差异），点它，再点屏幕中部出现的中文按钮（下一步）。
 10. 设备再次重启，屏幕角落（右上角）会滚动出现一些日志文字——**这就是越狱成功的标志**。
+11. 之后设备会**以中文界面重新进入演示模式初始化**（和 3.2 第 3～6 步一样的流程：跳过 WiFi、乱填表单、Skip → Standard → 完成、白屏、壁纸轮播）。这是正常现象，照着原步骤再过一遍、用秘密手势进图书馆界面即可。
 
 ### 3.4 安装热修复补丁（hotfix）
 
@@ -112,7 +113,10 @@ hotfix 的作用是让越狱在重启后依然生效，必装。根据上一步�
 **情况 A：重启后仍在演示模式**
 
 1. 搜索框输入 `;uzb` 按回车，开启演示模式下的 USB 传输。
+   - ⚠ **`;uzb` 是静默命令，输对了屏幕也不会有任何反应**——验证方法是直接连电脑，看 Kindle 盘符是否出现。
+   - 没盘符时按序排查：① 确认人在图书馆界面（壁纸轮播画面上输入无效，先过秘密手势）；② 先输 `;demo` 试试——它能弹出演示菜单，说明输入通路没问题；③ **检查分号是不是全角 `；`**：越狱选了简体中文后键盘默认中文输入，很容易敲出全角分号导致命令无效，点键盘上的"中/英"切换键切成英文再输。
 2. 连电脑，把与你 Kindle 界面语言对应的 hotfix 拷到根目录。界面是简体中文就选 `Update_hotfix_languagebreak-zh-Hans-CN.bin`（美式英语是 `-en-US`，以此类推）。
+   - 顺便确认一下根目录有没有 `mkk` 文件夹——有它说明越狱确实成功了，再往下走。
 3. 弹出盘符、拔线。搜索框输入 `;dsts` 按回车进入设置页，找到【更新您的 Kindle（Update your Kindle）】点它并确认。
 4. 设备自动重启并退出演示模式，越狱完成。
 
@@ -155,11 +159,21 @@ KUAL（Kindle Unified Application Launcher）是第三方插件的启动菜单�
    - `extensions/MRInstaller/`（里面有一堆文件）
    - `mrpackages/`（空文件夹，稍后放安装包用）
 
-### 4.2 用 MRPI 安装 KUAL
+### 4.2 安装 KUAL（推荐用 PEKI，最简单）
+
+1. 打开 PEKI 的发布页：<https://github.com/KindleTweaks/PEKI/releases>，下载最新版的 zip（写本教程时为 v1.0）。
+2. 解压，把里面的 **`KUAL.sh` 和 `KUAL.jar` 两个文件**拷到 Kindle 根目录下的 **`documents`** 文件夹。
+3. 弹出盘符、拔线。主页/图书馆里会出现一个名为 **KUAL** 的图标（像一本个人文档），点开就是菜单界面。
+
+> 这是 kindlemodding.org 目前官方推荐的装法，不需要 `;log mrpi`。MRPI 不白装——它是很多插件的安装器，之后用得上。
+
+### 4.2（备选）用 MRPI 安装 KUAL
+
+如果 PEKI 版在你的设备上打不开，再用这条传统路线重装：
 
 1. 下载 KUAL。打开 NiLuJe 的插件合集帖（MobileRead 论坛）：<https://www.mobileread.com/forums/showthread.php?t=225030>，在一楼附件列表里找 **KUAL**。如果下载附件提示要登录，注册一个免费账号即可。
    - PW3（固件 5.9 以上）按 kindlemodding 官方指南选 **coplate 版**：压缩包文件名里带一串 commit 哈希，形如 `KUAL-f190a38-20240104.tar.xz`，解压出的安装包形如 `Update_KUALBooklet_f190a38_install.bin`。
-   - 书伴的中文教程则把 KPW3 归到普通版（文件名带版本号，形如 `Update_KUALBooklet_v2.7.35_install.bin`）。两者装法完全一样，实际都有成功案例；**建议优先 coplate 版，装完打不开再换普通版重装**。
+   - 书伴的中文教程则把 KPW3 归到普通版（文件名带版本号，形如 `Update_KUALBooklet_v2.7.35_install.bin`）。两者装法完全一样，实际都有成功案例；优先 coplate 版，装完打不开再换普通版。
 2. 解压（`.tar.xz` 在 Windows 上请用 7-Zip、macOS 用 Keka 或 `tar` 命令——**别用 WinZip**，它解压 `.xz` 会悄悄损坏文件，是已知的坑）。
 3. 把解压出的 `Update_KUALBooklet_xxxxx_install.bin` 拷进 Kindle 根目录下的 **`mrpackages`** 文件夹。
    - 文件名里不要带浏览器自动加的 `(1)` 之类后缀，有就先改名去掉。
@@ -174,8 +188,6 @@ KUAL（Kindle Unified Application Launcher）是第三方插件的启动菜单�
 3. 菜单里找到【Helper → Install MR Packages】——这就是刚装好的 MRPI，说明两者都就位了。
 
 > 排错：安装失败可连电脑查看日志 `extensions/MRInstaller/log/mrinstaller.log`，常见原因见第七节对照表。
-
-**替代方案（可选了解）**：kindlemodding.org 目前推荐用 [PEKI](https://github.com/KindleTweaks/PEKI) 装 KUAL——把 PEKI.zip 里的 `KUAL.sh` 和 `KUAL.jar` 拷到 `documents` 文件夹，在图书馆点开即可，不需要 `;log mrpi`。本教程主路径仍采用 MRPI 方案（与本项目后续文档的假设一致），两条路殊途同归，最终得到的 KUAL 是同一个。
 
 ---
 
@@ -217,12 +229,13 @@ Kindle 连上 WiFi 就会自动下载并安装新固件，而**任何超过 5.16
 | 第 3.3 步选简体中文后没有日志，重启后也没有 `mkk` 文件夹 | 固件高于 5.16.2.1.1，漏洞已修复，越狱根本没生效 | 核对【设置 → 设备选项 → 设备信息】里的版本号。高于该版本请放弃 LanguageBreak，去 kindlemodding.org 查新固件对应的方法 |
 | 演示模式进不去 / 流程卡住 | 设备有密码锁 | 回正常系统去【设置 → 设备选项 → 设备密码】关闭；忘记密码用 `111222777` 重置（会清数据） |
 | `;enter_demo` 输了没反应 | 拼写错（漏了分号）、点成了搜索建议、或固件不兼容 | 逐字手输、注意开头的 `;`；仍不行可用备选进法：根目录放一个名为 `DONT_CHECK_BATTERY` 的空文件后直接输 `;demo` 回车 |
+| `;uzb` 输了没反应 | **它本来就是静默命令，没有画面反馈**；或全角分号、没聚焦、人在壁纸轮播画面 | 输完直接连电脑看盘符，有盘符就是成功；没有则：键盘切英文确认半角 `;`、点一下搜索框再输、先过秘密手势进图书馆界面；可用 `;demo`（有可见菜单）验证输入通路 |
 | 秘密手势怎么都过不去 | 手法不对 | 三种常见手法轮换试：①双指轻点右下角紧接着单指左滑；②双指按住右下角，抬一根手指另一根左滑；③双指按住直接左滑。每次等界面稳定再试 |
 | 弹出 "Collecting Debug Info" | 演示模式里的操作顺序错了，在错误的状态重试 | 需要重置演示模式：输 `;uzb` 回车 → 连电脑在根目录放一个名为 `DO_FACTORY_RESTORE` 的空文件（无扩展名）→ 重启，然后从头开始 |
 | 【更新您的 Kindle】按钮是灰的 | 根目录没有有效的 `.bin`；文件名被浏览器加了 `(1)` 后缀；或处于 Managed 模式 | 检查 hotfix 文件名和位置；Managed 模式按 3.5 节的办法退出后再装 |
 | 越狱后没有 `mkk` 文件夹 / `;log` 无输出 | 越狱没成功：常见是拷成了 `LanguageBreak` 文件夹本身（应多套了一层），或第 3.3-6 步插线太慢错过时间窗口 | 恢复出厂后重做 3.2～3.3，注意"拷内容不拷文件夹"，且按钮示意图一出现就立刻插线 |
 | `;log mrpi` 没反应 | `extensions`/`mrpackages` 位置不对；`.tar.xz` 被 WinZip 解压损坏；点了搜索历史记录 | 核对目录结构；换 7-Zip（Windows）/Keka（macOS）重新解压拷贝；逐字手输命令；重启 Kindle 再试 |
-| KUAL 图标出现但点开白屏/闪退 | KUAL 变体与设备不搭 | 换另一个变体（coplate ↔ 普通版）的 `_install.bin` 放进 `mrpackages`，重新 `;log mrpi` |
+| KUAL 图标出现但点开白屏/闪退 | KUAL 变体与设备不搭 | 换另一条安装路线：PEKI 装的就改走 `;log mrpi`（coplate 版）；MRPI 装的就换 PEKI，或 coplate ↔ 普通版互换后重新 `;log mrpi` |
 | 装完插件 WiFi、设置被锁 | 进了 Managed 模式 | 见 3.5 节"Managed 模式"处理办法 |
 | KUAL 里看不到 Rename OTA binaries | `renameotabin` 文件夹放错位置或嵌套多了一层 | 确认路径是 `extensions/renameotabin/menu.json` 这个层级，重启 Kindle 后再看 |
 
