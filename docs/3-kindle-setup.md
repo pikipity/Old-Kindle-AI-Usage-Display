@@ -56,6 +56,7 @@
 ├── warning.png
 └── config.env
 /mnt/us/extensions/ai-dashboard/
+├── config.xml
 ├── menu.json
 └── bin/
     ├── start.sh
@@ -64,7 +65,7 @@
 
 （`/mnt/us/dashboard/cache/` 不用手工建，脚本第一次运行时会自己创建，用来存最近一张拉取成功的图。）
 
-验证：对着上面的布局逐层点开检查，6 个文件一个不少、层级完全一致。
+验证：对着上面的布局逐层点开检查，7 个文件一个不少、层级完全一致。
 
 ### 第 3 步：在电脑上编辑 config.env
 
@@ -97,7 +98,7 @@ IMAGE_URL=http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 ### 第 5 步：从 KUAL 启动仪表盘
 
 1. 在 Kindle 主界面打开 **KUAL**。
-2. 在菜单里找到 **ai-dashboard**（AI Dashboard），点 **启动仪表盘**。
+2. 在菜单里找到 **AI Dashboard**，点 **启动仪表盘**。
 3. 启动脚本会做两件事：执行 `lipc-set-prop com.lab126.powerd preventScreenSaver 1` 禁止 Kindle 自动休眠，然后用 nohup 在后台运行 `dashboard.sh`（日志写在 `/mnt/us/dashboard/dashboard.log`）。
 
 验证：
@@ -120,7 +121,7 @@ IMAGE_URL=http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 
 | 现象 | 可能原因 | 排查与解决 |
 |---|---|---|
-| KUAL 里看不到"AI Dashboard"入口 | `ai-dashboard` 文件夹拷错了层级，或文件没拷全 | 检查 `/mnt/us/extensions/ai-dashboard/` 下必须有 `menu.json`、`bin/start.sh`、`bin/stop.sh` 三个文件。常见错误：拷成了 `extensions/ai-dashboard/ai-dashboard/`（多套一层），或把文件散丢在 `extensions/` 根下。改对后退出 KUAL 重新进 |
+| KUAL 里看不到"AI Dashboard"入口 | `ai-dashboard` 文件夹拷错了层级，或文件没拷全 | 检查 `/mnt/us/extensions/ai-dashboard/` 下必须有 `config.xml`、`menu.json`、`bin/start.sh`、`bin/stop.sh` 四个文件（**缺 `config.xml` 时 KUAL 完全看不到这个扩展**）。常见错误：拷成了 `extensions/ai-dashboard/ai-dashboard/`（多套一层），或把文件散丢在 `extensions/` 根下。改对后退出 KUAL 重新进 |
 | 点了"启动仪表盘"没反应，屏幕不变 | 脚本丢了执行权限（ZIP 解压再拷贝容易出现） | 用 USBNetwork 的 SSH 连上 Kindle（装法见 [1-jailbreak.md](1-jailbreak.md)），执行 `chmod +x /mnt/us/dashboard/dashboard.sh /mnt/us/extensions/ai-dashboard/bin/start.sh /mnt/us/extensions/ai-dashboard/bin/stop.sh`，再回 KUAL 启动。若 chmod 不生效（`/mnt/us` 是 FAT 文件系统，权限位可能存不住），在 SSH 里手动执行 `sh /mnt/us/dashboard/dashboard.sh`，看实际报错再对症处理 |
 | 屏幕有画面，但顶部告警横幅一直不消失 | 持续拉取失败：WiFi 断了 / `IMAGE_URL` 填错 / 服务器没跑 | ① 看 Kindle 右上角 WiFi 图标，断了就重连；② 电脑浏览器访问 `IMAGE_URL`，打不开就是地址或服务器问题：逐字符核对 `config.env` 里的域名、token 与服务器 nginx 配置是否一致（含结尾的 `dash.png`）；③ 服务器上 `pm2 logs` 看渲染程序是否还活着 |
 | 横幅偶尔出现又自己消失 | 网络偶发超时（脚本里 `wget` 超时设为 20 秒） | 偶发可以不管。频繁出现则查：服务器安全组/防火墙是否放行 80 端口、家里路由器是否开了 AP 隔离、宽带运营商到服务器的链路是否稳定 |

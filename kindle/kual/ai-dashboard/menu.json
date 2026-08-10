@@ -1,14 +1,22 @@
 {
-    "items": [
-        {
-            "name": "启动仪表盘",
-            "action": "/mnt/us/extensions/ai-dashboard/bin/start.sh",
-            "exitmenu": false
-        },
-        {
-            "name": "停止仪表盘",
-            "action": "/mnt/us/extensions/ai-dashboard/bin/stop.sh",
-            "exitmenu": true
-        }
-    ]
+	"items": [
+	{
+		"name": "AI Dashboard",
+		"priority": 0,
+		"items": [
+		{
+			"name": "启动仪表盘",
+			"priority": 1,
+			"action": "bin/start.sh",
+			"exitmenu": true
+		},
+		{
+			"name": "停止仪表盘",
+			"priority": 2,
+			"action": "bin/stop.sh",
+			"exitmenu": true
+		}
+		]
+	}
+	]
 }

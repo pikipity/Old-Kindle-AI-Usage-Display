@@ -98,6 +98,7 @@ Old-Kindle-AI-Usage-Display/
 ├── kindle/
 │   ├── dashboard.sh             # 主循环 + 失败叠字告警
 │   └── kual/ai-dashboard/
+│       ├── config.xml             # KUAL 扩展声明（KUAL 靠它发现扩展）
 │       ├── menu.json
 │       └── bin/{start.sh, stop.sh}
 └── assets/                      # README 效果图，后续补
