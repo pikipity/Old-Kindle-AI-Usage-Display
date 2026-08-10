@@ -24,7 +24,7 @@
 
 二选一：
 
-- 会用 git：`git clone <仓库地址>`
+- 会用 git：`git clone https://github.com/pikipity/Old-Kindle-AI-Usage-Display.git`
 - 不用 git：在 GitHub 仓库页面点 **Code → Download ZIP**，下载后解压。
 
 验证：打开仓库文件夹，能看到 `kindle/` 目录和根目录下的 `config.env` 文件。
