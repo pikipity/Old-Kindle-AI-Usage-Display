@@ -65,7 +65,7 @@ current_url() {
 }
 
 # WiFi 图标：按方向选图标文件（横屏图标内容已随图旋转）和位置
-# 竖屏=左上；横屏两种方向都映射到"画面右上角"对应的帧缓冲坐标
+# 三种方向都映射到"画面左上角"（表盘上方空白）对应的帧缓冲坐标
 wifi_overlay() {
     if wifi_up; then
         icon="wifi-on"
@@ -74,8 +74,8 @@ wifi_overlay() {
     fi
     ori=$(cat "$ORIENTATION_FILE" 2>/dev/null)
     case "$ori" in
-        landscape-cw)  f="$DIR/icons/$icon-cw.png";  x=44;  y=14 ;;
-        landscape-ccw) f="$DIR/icons/$icon-ccw.png"; x=988; y=1394 ;;
+        landscape-cw)  f="$DIR/icons/$icon-cw.png";  x=44;  y=1394 ;;
+        landscape-ccw) f="$DIR/icons/$icon-ccw.png"; x=988; y=14 ;;
         *)             f="$DIR/icons/$icon.png";     x=44;  y=14 ;;
     esac
     [ -f "$f" ] && "$FBINK" -q -b -g file="$f,x=$x,y=$y"
