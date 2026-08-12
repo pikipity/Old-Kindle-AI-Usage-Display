@@ -295,14 +295,14 @@ def draw_clock(d, cx, cy, r, now):
     d.ellipse([cx - 9, cy - 9, cx + 9, cy + 9], fill=BLACK)
 
 
-def draw_calendar(d, fonts, x0, x1, now):
-    """当月日历，周一开头，今天用黑底白字圆点标出。"""
+def draw_calendar(d, fonts, x0, x1, y0, now):
+    """当月日历，周一开头，今天用黑底白字圆点标出。y0 为区块顶部。"""
     title = f"{now.year} 年 {now.month} 月"
     tw = d.textlength(title, font=fonts.cal_title)
-    d.text(((x0 + x1 - tw) / 2, 48), title, font=fonts.cal_title, fill=BLACK)
+    d.text(((x0 + x1 - tw) / 2, y0), title, font=fonts.cal_title, fill=BLACK)
 
     cell_w = (x1 - x0) / 7
-    head_y, grid_y, cell_h = 112, 152, 48
+    head_y, grid_y, cell_h = y0 + 64, y0 + 104, 48
     for i, name in enumerate(WEEKDAYS):
         cx = x0 + cell_w * (i + 0.5)
         w = d.textlength(name, font=fonts.cal_head)
@@ -509,7 +509,7 @@ def build_image(cfg, result, hist, now):
 
     # 顶部：表盘（左）+ 当月日历（右，今天黑底标出）
     draw_clock(d, 205, 225, 155, now)
-    draw_calendar(d, fonts, 400, 1032, now)
+    draw_calendar(d, fonts, 400, 1032, 48, now)
 
     d.line([40, 460, 1032, 460], fill=LIGHT, width=2)
 
@@ -517,13 +517,7 @@ def build_image(cfg, result, hist, now):
     today = now.strftime("%Y-%m-%d")
     draw_plan_panel(d, fonts, (40, 485, 1032, 935), "KIMI CODE", result["kimi"], now)
 
-    ds = result["deepseek"]
-    ds_total = ds["data"]["total"] if ds["data"] else 0.0
-    if ds["data"] is None:
-        d_yesterday = d_today = None
-    else:
-        d_yesterday = delta_vs_yesterday(hist, today, "deepseek", ds_total)
-        d_today = delta_vs_today(hist, today, "deepseek", ds_total)
+    ds, _total, d_yesterday, d_today = _deepseek_args(result, hist, today)
     draw_panel(d, fonts, (40, 950, 1032, 1400), "DEEPSEEK", ds, d_yesterday, d_today)
 
     # 底部状态行
@@ -536,18 +530,66 @@ def build_image(cfg, result, hist, now):
     return img
 
 
+def _deepseek_args(result, hist, today):
+    """DeepSeek 面板参数：data / total / 较昨日 / 今日。"""
+    ds = result["deepseek"]
+    total = ds["data"]["total"] if ds["data"] else 0.0
+    if ds["data"] is None:
+        return ds, total, None, None
+    return (ds, total,
+            delta_vs_yesterday(hist, today, "deepseek", total),
+            delta_vs_today(hist, today, "deepseek", total))
+
+
+def build_landscape_image(cfg, result, hist, now):
+    """横版 1448×1072：左栏表盘+日历，右栏两块面板（竖屏时旋转 90° 使用）。"""
+    fonts = Fonts(cfg["FONT_PATH"])
+    img = Image.new("L", (1448, 1072), WHITE)
+    d = ImageDraw.Draw(img)
+
+    # 左栏：表盘（上）+ 日历（下）
+    draw_clock(d, 270, 260, 165, now)
+    draw_calendar(d, fonts, 40, 500, 470, now)
+    d.line([520, 40, 520, 1032], fill=LIGHT, width=2)
+
+    # 右栏：两块面板
+    today = now.strftime("%Y-%m-%d")
+    draw_plan_panel(d, fonts, (540, 40, 1408, 480), "KIMI CODE", result["kimi"], now)
+    ds, _total, d_yesterday, d_today = _deepseek_args(result, hist, today)
+    draw_panel(d, fonts, (540, 520, 1408, 960), "DEEPSEEK", ds, d_yesterday, d_today)
+
+    interval = cfg.get("FETCH_INTERVAL", "60")
+    footer = f"渲染于 {now:%Y-%m-%d %H:%M} · 每 {interval} 秒更新"
+    if not result["kimi"]["ok"] or not result["deepseek"]["ok"]:
+        footer += " · 部分数据未更新"
+    fw = d.textlength(footer, font=fonts.footer)
+    d.text(((1448 - fw) / 2, 1035), footer, font=fonts.footer, fill=GRAY)
+    return img
+
+
 # ---------- 主流程 ----------
+OUT_LAND_CW = OUT_DIR / "dash-landscape-cw.png"   # 设备顺时针横放
+OUT_LAND_CCW = OUT_DIR / "dash-landscape-ccw.png"  # 设备逆时针横放
+
+
+def _save_atomic(img, path):
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    img.save(tmp, format="PNG", optimize=True)
+    os.replace(tmp, path)  # 原子替换，nginx 不会读到半截文件
+
+
 def render_once(cfg):
     tz = get_tz(cfg.get("TIMEZONE"))
     now = datetime.now(tz)
     result = collect(cfg, now)
     hist = update_history(result, now.strftime("%Y-%m-%d"))
-    img = build_image(cfg, result, hist, now)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = OUT_DIR / "dash.png.tmp"
-    img.save(tmp, format="PNG", optimize=True)
-    os.replace(tmp, OUT_FILE)  # 原子替换，nginx 不会读到半截文件
+    _save_atomic(build_image(cfg, result, hist, now), OUT_FILE)
+    # 横版：1448×1072 排版后双向旋转，设备横放哪边都有得选
+    land = build_landscape_image(cfg, result, hist, now)
+    _save_atomic(land.rotate(90, expand=True), OUT_LAND_CW)
+    _save_atomic(land.rotate(-90, expand=True), OUT_LAND_CCW)
 
     kimi = result["kimi"]
     ds = result["deepseek"]

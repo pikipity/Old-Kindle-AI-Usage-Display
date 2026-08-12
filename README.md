@@ -6,13 +6,19 @@
 
 > 图为服务器渲染的 1072×1448 灰度图（演示数据）。取数失败时会沿用缓存数据渲染，并在面板右上角显示 ⚠ 角标提示。
 
+横屏模式（KUAL 一键切换，支持顺/逆时针两个方向）：
+
+![横屏效果图](assets/screenshot-landscape.png)
+
 ## 特性
 
 - **Kindle 端零业务逻辑**：取数、渲染、时钟、日历全部在服务器，Kindle 只负责每分钟下载一张图并刷屏
 - **Kimi Code 订阅用量**：本周额度百分比 + 进度条、5 小时频限窗口、加油包余额，含重置时间
 - **DeepSeek 余额**：充值/赠送构成 + 较昨日/今日变化（服务器每天存快照到 `history.json`）
-- **两级失败兜底**：服务器取数失败 → 沿用旧数据渲染（标灰 + ⚠ 角标）；Kindle 拉取失败 → 显示本地缓存图 + 顶部告警横幅。永不黑屏
-- **低功耗友好**：每分钟局部刷新，每小时一次全刷清残影；Kindle 常亮插电运行
+- **横竖屏切换**：竖屏 / 顺时针横屏 / 逆时针横屏，KUAL 菜单一键切换（横版为独立排版，不是简单旋转）
+- **WiFi 状态图标**：Kindle 端左上角常显（扇形：实心=已连接，斜杠=未连接），配合告警横幅一眼区分断网还是服务器问题
+- **两级失败兜底**：服务器取数失败 → 沿用旧数据渲染（仅 ⚠ 角标，不标灰）；Kindle 拉取失败 → 显示本地缓存图 + 顶部告警横幅。永不黑屏
+- **低功耗友好**：每分钟局部刷新，每小时一次全刷清残影；Kindle 常亮插电运行，背光自动关闭
 - **API Key 不出服务器**：Kindle 只接触一个带随机口令的图片 URL
 
 ## 架构
@@ -67,13 +73,17 @@
 │   ├── nginx.conf.example
 │   └── ecosystem.config.js.example   # PM2 模板
 ├── kindle/
-│   ├── dashboard.sh      # Kindle 主循环（busybox sh + fbink）
+│   ├── dashboard.sh      # Kindle 主循环（busybox sh + fbink，WiFi 判定 + 方向选择）
 │   ├── warning.png       # 拉取失败时的顶部告警横幅
-│   └── kual/ai-dashboard/   # KUAL 菜单扩展（启动/停止）
+│   ├── icons/            # WiFi 状态图标（make_icons.py 生成）
+│   └── kual/ai-dashboard/   # KUAL 菜单扩展（竖屏/横屏顺/逆时针/关闭）
 ├── tools/
 │   ├── make_demo.py      # 用假数据渲染效果图（也可当渲染冒烟测试）
-│   └── make_warning.py   # 重新生成 warning.png
-└── assets/screenshot.png
+│   ├── make_warning.py   # 重新生成 warning.png
+│   ├── make_icons.py     # 生成 WiFi 图标 + 样式候选图
+│   ├── powertest.sh      # 休眠方案可行性测试（方案已否决，留档）
+│   └── buttontest.sh     # 电源键检测枚举（同上，留档）
+└── assets/               # README 效果图（含横版）
 ```
 
 ## 开发备注

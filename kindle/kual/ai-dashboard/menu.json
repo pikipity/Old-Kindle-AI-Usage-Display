@@ -5,14 +5,26 @@
 		"priority": 0,
 		"items": [
 		{
-			"name": "启动仪表盘",
+			"name": "开启竖屏仪表盘",
 			"priority": 1,
-			"action": "bin/start.sh",
+			"action": "bin/start-portrait.sh",
 			"exitmenu": true
 		},
 		{
-			"name": "停止仪表盘",
+			"name": "开启横屏仪表盘（顺时针）",
 			"priority": 2,
+			"action": "bin/start-landscape-cw.sh",
+			"exitmenu": true
+		},
+		{
+			"name": "开启横屏仪表盘（逆时针）",
+			"priority": 3,
+			"action": "bin/start-landscape-ccw.sh",
+			"exitmenu": true
+		},
+		{
+			"name": "关闭仪表盘",
+			"priority": 4,
 			"action": "bin/stop.sh",
 			"exitmenu": true
 		}

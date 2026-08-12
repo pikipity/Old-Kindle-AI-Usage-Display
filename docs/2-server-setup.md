@@ -228,6 +228,12 @@ http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 
 能看到仪表盘图片即成功。第 6 步自检生成的那张图，此刻就能通过 URL 看到了。
 
+服务器每轮其实渲染**三张图**，都在同一个目录下，可以顺带验证：
+
+- `dash.png` —— 竖屏版
+- `dash-landscape-cw.png` —— 横屏版（设备顺时针横放）
+- `dash-landscape-ccw.png` —— 横屏版（设备逆时针横放）
+
 > 如果你的站点配置了强制跳转 HTTPS，注意 Kindle 端的 wget 对证书环境很挑。本项目默认前提就是纯 HTTP 的 80 端口站点，建议让这条 location 保持 HTTP 可访问。
 
 ## 第 8 步：PM2 托管常驻
@@ -274,6 +280,19 @@ pm2 set pm2-logrotate:compress true   # 历史日志 gzip 压缩
 ```
 
 注意这是 PM2 全局设置，对你服务器上**其他 PM2 应用**的日志同样生效（一般正是你想要的）。想手动清空所有日志可以随时 `pm2 flush`。装完不用重启任何应用，`pm2-logrotate` 作为独立模块进程自动生效；以后改了上面的 `pm2 set` 配置，`pm2 restart pm2-logrotate` 一次让它立刻生效即可。
+
+### 以后更新代码
+
+仓库有更新时，服务器端三步走：
+
+```bash
+cd /srv/kindle-dash
+git pull                    # 压缩包部署的：重新上传覆盖
+pm2 restart kindle-dash     # render.py 是常驻进程，代码改动要重启才生效
+pm2 logs kindle-dash        # 确认正常出图
+```
+
+（`config.env` 你已填好的值不受 `git pull` 影响——第 5 步做过 `skip-worktree`。）
 
 ## 常见错误对照表
 

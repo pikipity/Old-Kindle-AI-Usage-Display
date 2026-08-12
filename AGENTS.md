@@ -34,7 +34,8 @@
 - 展示口径：Kimi 面板 = 本周额度% + 进度条 + 5h 窗口 + 加油包；DeepSeek 面板 = 余额 + 构成 + **较昨日/今日变化**（官方无用量明细 API，服务器每天存一次快照到 `history.json` 算变化）。
 - **失败兜底分两层**：
   - 服务器取数失败：渲染时沿用最近一次成功数据，面板右上角加 ⚠ 缓存角标（数据保持深色不标灰），不黑屏。
-  - **Kindle 拉取失败（wget 失败/超时）**：显示本地缓存的上一张图，并用 fbink 在屏幕顶部叠加一行警告文字（如 `⚠ 更新失败 04:12`），下次成功拉取后警告自动消失。两级兜底互不相同：图内角标表示"服务器数据旧"，屏上叠字表示"Kindle 连不上服务器"。
+  - **Kindle 拉取失败（wget 失败/超时）**：显示本地缓存的上一张图，并用 fbink 在屏幕顶部叠加一行警告文字，下次成功拉取后警告自动消失。两级兜底互不相同：图内角标表示"服务器数据旧"，屏上叠字表示"Kindle 连不上服务器"。
+- **WiFi 状态图标（Kindle 端叠加，与横幅同机制）**：屏幕左上角（x44, y14）常显 40×40 扇形图标——`ifconfig wlan0` 有 inet addr → 实心（wifi-on.png）；无 → 斜杠（wifi-off.png）。与 wget 成败组合：斜杠+横幅=断网；实心+横幅=服务器/远端问题。图标永远最后绘制，不被横幅遮盖。
 
 ## 4. 服务器端
 
@@ -96,12 +97,18 @@ Old-Kindle-AI-Usage-Display/
 │   └── ecosystem.config.js.example
 ├── pyproject.toml               # uv 依赖声明（仅 pillow）
 ├── kindle/
-│   ├── dashboard.sh             # 主循环 + 失败叠字告警
+│   ├── dashboard.sh             # 主循环 + 失败叠字告警 + WiFi 图标 + 方向选择
+│   ├── warning.png              # 告警横幅（make_warning.py 生成）
+│   ├── icons/                   # WiFi 图标（make_icons.py 生成）
 │   └── kual/ai-dashboard/
 │       ├── config.xml             # KUAL 扩展声明（KUAL 靠它发现扩展）
-│       ├── menu.json
-│       └── bin/{start.sh, stop.sh}
-└── assets/                      # README 效果图，后续补
+│       ├── menu.json              # 四项：竖屏/横屏顺/横屏逆/关闭
+│       └── bin/{start.sh, start-portrait.sh, start-landscape-cw.sh, start-landscape-ccw.sh, stop.sh}
+├── tools/
+│   ├── make_demo.py             # 假数据渲染效果图（冒烟测试）
+│   ├── make_warning.py / make_icons.py
+│   ├── powertest.sh / buttontest.sh   # 休眠方案验证脚本（方案已否决，留档）
+└── assets/                      # README 效果图（竖版 + 横版）
 ```
 
 刻意保持扁平简单，不拆模块、不上框架。
@@ -112,15 +119,18 @@ Old-Kindle-AI-Usage-Display/
 - 装 fbink；设备上布局：
 
 ```
-/mnt/us/extensions/ai-dashboard/   # KUAL 扩展（菜单入口 start/stop）
+/mnt/us/extensions/ai-dashboard/   # KUAL 扩展（菜单四项：竖屏/横屏顺/横屏逆/关闭）
 /mnt/us/dashboard/
 ├── dashboard.sh
 ├── config.env                     # 只填 IMAGE_URL
+├── icons/{wifi-on,wifi-off}.png   # WiFi 状态图标
+├── orientation                    # 方向标记（start.sh 写入，dashboard.sh 每轮读）
 └── cache/dash.png                 # 拉取失败时的兜底图
 ```
 
-- 运行模式：常亮（`preventScreenSaver`）+ 插电 + WiFi 常开。
+- 运行模式：常亮（`preventScreenSaver`）+ 背光关闭（start.sh 设 `flIntensity 0`）+ 插电 + WiFi 常开。
 - 刷新策略：每分钟局部刷新；每 `FULL_REFRESH_EVERY` 次做一次全刷清残影；拉取失败按 §3 第二层兜底处理。
+- **方向切换**：KUAL 点对应方向菜单项 → `start.sh <portrait|landscape-cw|landscape-ccw>` 写 orientation 标记 → 杀旧进程重启（启动即切换）；`dashboard.sh` 每轮读标记，把 `IMAGE_URL` 文件名替换为对应图（`dash.png` / `dash-landscape-cw.png` / `dash-landscape-ccw.png`）。
 
 ## 8. 屏幕布局
 
@@ -130,6 +140,8 @@ Old-Kindle-AI-Usage-Display/
 - 中部约 3/8：KIMI CODE 面板，三段式（细分隔线）：本周额度、5h 频限窗口各为"标签 + 已用百分比 + 进度条 + 重置时间"，加油包只显示余额
 - 下部约 3/8：DEEPSEEK 面板——超大字号余额 + 构成条（充值/赠送占比）+ 构成明细（含百分比）+ 变化（较昨日 ｜ 今日；`is_available` 为假时显示"余额不可用"角标）
 - 底部小字：渲染时间 / 数据异常提示；取数失败不标灰，仅右上角 ⚠ 角标
+
+**横屏 1448×1072**（独立排版，非简单缩放）：左栏约 500px（表盘上、日历下），右栏约 900px（KIMI 面板上、DEEPSEEK 面板下，各 440 高），底部小字。服务器每轮输出三张图：`dash.png`（竖版）、`dash-landscape-cw.png` / `dash-landscape-ccw.png`（横版分别顺/逆时针旋转 90° 写入 1072×1448 文件，fbink 不做旋转）。
 
 ## 9. 安装教程大纲（docs/，必须详细到可照做）
 
@@ -180,3 +192,11 @@ Old-Kindle-AI-Usage-Display/
 - 最小改动、最小依赖：服务器端仅 Pillow；Kindle 端纯 busybox shell + fbink，不引入 curl/jq/python
 - 所有脚本失败时给出清晰中文报错，方便开源用户排查
 - 不执行任何 git 提交/推送操作，除非用户明确要求
+
+## 12. 已评估并否决的方案（防止重复调研）
+
+- **电源键休眠（2026-08 用户实测后否决）**：
+  - 路径 B（真·系统休眠）：按键休眠/唤醒本身正常，但实测（tools/powertest.sh）`touchScreenSaverTimeout`、`deferSuspend`（单次与周期性）均无法禁用约 10 分钟的超时自动休眠，"按键睡但不自动睡"不成立，否决。
+  - 路径 A（软休眠）：`readyToSuspend`/`wakeFromSuspend` 两个 lipc 事件名实测不存在；且软休眠无法真正禁用触摸（系统框架存活，需 evtest --grab 独占触摸节点才可解，引入额外二进制），用户放弃。
+  - 已确认事实：内置屏保图在 `/usr/share/blanket/screensaver/`；`preventScreenSaver 1` 时电源键无休眠效果（恢复方法 `lipc-set-prop com.lab126.powerd preventScreenSaver 0`）。
+- **重力感应自动旋转横屏**：PW3 无加速度计（Kindle 全系仅 Oasis/Scribe 线有），做不了；以 KUAL 菜单手动切换横屏（顺/逆时针）替代，已实现。

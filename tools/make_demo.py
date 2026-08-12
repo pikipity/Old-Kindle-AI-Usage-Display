@@ -54,7 +54,13 @@ def main():
     out = ROOT / "assets" / "screenshot.png"
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out, optimize=True)
-    print(f"已生成 {out}（演示数据：两个面板均为正常取数状态）")
+
+    land = render.build_landscape_image(cfg, result, hist, now)
+    out_land = ROOT / "assets" / "screenshot-landscape.png"
+    land.save(out_land, optimize=True)
+
+    print(f"已生成 {out}")
+    print(f"已生成 {out_land}（横版布局预览，未旋转；上机文件由服务器旋转 90°）")
 
 
 if __name__ == "__main__":

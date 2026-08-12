@@ -40,6 +40,7 @@
 |---|---|
 | `kindle/dashboard.sh` | `/mnt/us/dashboard/dashboard.sh` |
 | `kindle/warning.png` | `/mnt/us/dashboard/warning.png` |
+| `kindle/icons/`（整个文件夹） | `/mnt/us/dashboard/icons/` |
 | `config.env`（仓库根目录） | `/mnt/us/dashboard/config.env` |
 | `kindle/kual/ai-dashboard/`（整个文件夹） | `/mnt/us/extensions/ai-dashboard/` |
 
@@ -54,18 +55,24 @@
 /mnt/us/dashboard/
 ├── dashboard.sh
 ├── warning.png
-└── config.env
+├── config.env
+└── icons/
+    ├── wifi-on.png
+    └── wifi-off.png
 /mnt/us/extensions/ai-dashboard/
 ├── config.xml
 ├── menu.json
 └── bin/
     ├── start.sh
+    ├── start-portrait.sh
+    ├── start-landscape-cw.sh
+    ├── start-landscape-ccw.sh
     └── stop.sh
 ```
 
-（`/mnt/us/dashboard/cache/` 不用手工建，脚本第一次运行时会自己创建，用来存最近一张拉取成功的图。）
+（`/mnt/us/dashboard/cache/` 和 `orientation` 标记文件不用手工建，脚本第一次运行/启动时会自己创建。）
 
-验证：对着上面的布局逐层点开检查，7 个文件一个不少、层级完全一致。
+验证：对着上面的布局逐层点开检查，12 个文件一个不少、层级完全一致。
 
 ### 第 3 步：在电脑上编辑 config.env
 
@@ -98,13 +105,18 @@ IMAGE_URL=http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 ### 第 5 步：从 KUAL 启动仪表盘
 
 1. 在 Kindle 主界面打开 **KUAL**。
-2. 在菜单里找到 **AI Dashboard**，点 **启动仪表盘**。
-3. 启动脚本会做两件事：执行 `lipc-set-prop com.lab126.powerd preventScreenSaver 1` 禁止 Kindle 自动休眠，然后用 nohup 在后台运行 `dashboard.sh`（日志写在 `/mnt/us/dashboard/dashboard.log`）。
+2. 在菜单里找到 **AI Dashboard**，里面有四个选项，按需点一个：
+   - **开启竖屏仪表盘**
+   - **开启横屏仪表盘（顺时针）**——设备顺时针横放（顶部朝右）
+   - **开启横屏仪表盘（逆时针）**——设备逆时针横放（顶部朝左）
+   - **关闭仪表盘**
+3. 启动脚本会：记录屏幕方向 → 执行 `lipc-set-prop com.lab126.powerd preventScreenSaver 1` 禁止自动休眠 → 关闭背光 → 用 nohup 在后台运行 `dashboard.sh`（日志写在 `/mnt/us/dashboard/dashboard.log`）。
 
 验证：
 
-- 1 分钟内，屏幕应刷新出仪表盘画面：顶部是模拟表盘时钟和当月日历，中部是 KIMI 面板，下部是 DEEPSEEK 面板。
+- 1 分钟内，屏幕应刷新出仪表盘画面（竖屏：上时钟日历、中 KIMI、下 DEEPSEEK；横屏：左时钟日历、右两块面板）。
 - 再等一两分钟，看时钟的分钟有没有变化——变了说明"每分钟拉图刷屏"的循环工作正常。
+- 屏幕左上角应有 WiFi 扇形图标（实心=已连接；带斜杠=未连接）。
 - 想进一步确认后台状态：重新连 USB，看 `/mnt/us/dashboard/dashboard.log` 里每分钟有日志，`/mnt/us/dashboard/cache/dash.png` 存在。
 
 至此安装完成。Kindle 可以拔掉数据线、插上充电线，放桌上常亮运行。
@@ -113,8 +125,10 @@ IMAGE_URL=http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 
 - **插电常亮**：启动脚本已禁止自动休眠，屏幕会一直显示。墨水屏静态显示本身不耗电，但 WiFi 和每分钟刷新耗电，建议一直插着充电器。
 - **背光**：启动脚本会自动把背光关闭（`flIntensity 0`，墨水屏靠环境光就能看）；想保留背光就编辑 `start.sh` 把那一行的 `0` 改成 1~24 的亮度或删掉。停止仪表盘时会自动恢复到中等亮度。
-- **停止仪表盘**：仪表盘运行时系统界面仍在底层运行——直接触摸屏幕（或点顶部下拉区域）唤出系统界面，回图书馆打开 KUAL → AI Dashboard → **停止仪表盘**。脚本会被杀掉、休眠设置还原（`preventScreenSaver 0`）、背光恢复、清屏提示返回系统。操作途中画面被下一次分钟刷新盖掉的话，等它刷完接着点即可。
-- **重启 Kindle 后不会自动启动**，需要重新打开 KUAL 点一次"启动仪表盘"。
+- **切换横竖屏**：直接点对应方向的"开启"菜单项即可——启动即切换（脚本会先杀旧进程再启新进程），不用先关闭。横放后发现画面倒了，换另一个方向的菜单项。
+- **WiFi 状态图标**：屏幕左上角常显扇形图标。实心 = WiFi 已连接；带斜杠 = WiFi 未连接。拉取失败时配合顶部告警横幅就能一眼区分：斜杠图标 + 横幅 = 断网；实心图标 + 横幅 = 服务器或远端线路问题。
+- **停止仪表盘**：仪表盘运行时系统界面仍在底层运行——直接触摸屏幕（或点顶部下拉区域）唤出系统界面，回图书馆打开 KUAL → AI Dashboard → **关闭仪表盘**。脚本会被杀掉、休眠设置还原（`preventScreenSaver 0`）、背光恢复、清屏提示返回系统。操作途中画面被下一次分钟刷新盖掉的话，等它刷完接着点即可。
+- **重启 Kindle 后不会自动启动**，需要重新打开 KUAL 点一次对应方向的"开启"项。
 - **偶发拉取失败不用管**：某次拉取失败时，屏幕显示缓存的上一张图，并在顶部叠加一条告警横幅；下次拉取成功横幅自动消失。只有横幅**长时间不消失**才需要排查（见第四节）。
 - **看日志**：USB 连电脑打开 `/mnt/us/dashboard/dashboard.log`，每分钟的运行记录都在里面，排查问题先看它。
 
@@ -122,9 +136,10 @@ IMAGE_URL=http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 
 | 现象 | 可能原因 | 排查与解决 |
 |---|---|---|
-| KUAL 里看不到"AI Dashboard"入口 | `ai-dashboard` 文件夹拷错了层级，或文件没拷全 | 检查 `/mnt/us/extensions/ai-dashboard/` 下必须有 `config.xml`、`menu.json`、`bin/start.sh`、`bin/stop.sh` 四个文件（**缺 `config.xml` 时 KUAL 完全看不到这个扩展**）。常见错误：拷成了 `extensions/ai-dashboard/ai-dashboard/`（多套一层），或把文件散丢在 `extensions/` 根下。改对后退出 KUAL 重新进 |
-| 点了"启动仪表盘"没反应，屏幕不变 | 脚本丢了执行权限（ZIP 解压再拷贝容易出现） | 用 USBNetwork 的 SSH 连上 Kindle（装法见 [1-jailbreak.md](1-jailbreak.md)），执行 `chmod +x /mnt/us/dashboard/dashboard.sh /mnt/us/extensions/ai-dashboard/bin/start.sh /mnt/us/extensions/ai-dashboard/bin/stop.sh`，再回 KUAL 启动。若 chmod 不生效（`/mnt/us` 是 FAT 文件系统，权限位可能存不住），在 SSH 里手动执行 `sh /mnt/us/dashboard/dashboard.sh`，看实际报错再对症处理 |
-| 屏幕有画面，但顶部告警横幅一直不消失 | 持续拉取失败：WiFi 断了 / `IMAGE_URL` 填错 / 服务器没跑 | ① 看 Kindle 右上角 WiFi 图标，断了就重连；② 电脑浏览器访问 `IMAGE_URL`，打不开就是地址或服务器问题：逐字符核对 `config.env` 里的域名、token 与服务器 nginx 配置是否一致（含结尾的 `dash.png`）；③ 服务器上 `pm2 logs` 看渲染程序是否还活着 |
+| KUAL 里看不到"AI Dashboard"入口 | `ai-dashboard` 文件夹拷错了层级，或文件没拷全 | 检查 `/mnt/us/extensions/ai-dashboard/` 下必须有 `config.xml`、`menu.json` 和 `bin/` 里的 5 个脚本（**缺 `config.xml` 时 KUAL 完全看不到这个扩展**）。常见错误：拷成了 `extensions/ai-dashboard/ai-dashboard/`（多套一层），或把文件散丢在 `extensions/` 根下。改对后退出 KUAL 重新进 |
+| 点了"开启"项没反应，屏幕不变 | 脚本丢了执行权限（ZIP 解压再拷贝容易出现） | 用 USBNetwork 的 SSH 连上 Kindle（装法见 [1-jailbreak.md](1-jailbreak.md)），执行 `chmod +x /mnt/us/dashboard/dashboard.sh /mnt/us/extensions/ai-dashboard/bin/*.sh`，再回 KUAL 启动。若 chmod 不生效（`/mnt/us` 是 FAT 文件系统，权限位可能存不住），在 SSH 里手动执行 `sh /mnt/us/dashboard/dashboard.sh`，看实际报错再对症处理 |
+| 屏幕有画面，但顶部告警横幅一直不消失 | 持续拉取失败 | **先看左上角 WiFi 图标**：带斜杠 = WiFi 断了，重连 WiFi 即可；实心 = WiFi 正常，问题在服务器/远端——① 电脑浏览器访问 `IMAGE_URL`，打不开就逐字符核对 `config.env` 里的域名、token 与服务器 nginx 配置（含结尾的 `dash.png`）；② 服务器上 `pm2 logs` 看渲染程序是否还活着 |
+| 横屏后画面是倒的 | 顺/逆时针方向选反了 | 不用改任何文件：KUAL 里点另一个方向的"开启横屏仪表盘"即可（启动即切换） |
 | 横幅偶尔出现又自己消失 | 网络偶发超时（脚本里 `wget` 超时设为 20 秒） | 偶发可以不管。频繁出现则查：服务器安全组/防火墙是否放行 80 端口、家里路由器是否开了 AP 隔离、宽带运营商到服务器的链路是否稳定 |
 | 画面有残影，字迹越看越灰 | 局部刷新累积的正常现象 | 把 `config.env` 里的 `FULL_REFRESH_EVERY` 调小（默认 60，可改成 30），即每 30 次刷新做一次全刷清残影。改完要在 KUAL 里停止再启动才生效 |
 | 屏幕上残留系统状态栏或菜单的影子 | 系统 UI 曾在仪表盘运行时弹出过 | 点一下屏幕或等下一次刷新一般会盖掉。进阶做法：SSH 里 `stop lab126_gui` 彻底停掉系统界面——但系统 UI 会完全消失，想恢复要 `start lab126_gui` 或重启，新手不建议碰 |
@@ -137,7 +152,7 @@ IMAGE_URL=http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 仓库以后更新了，升级方法很简单：
 
 1. 下载新版仓库，USB 连上 Kindle，把**有变化的文件**按第二节的布局重新拷贝、覆盖到原位置。
-2. 如果覆盖了 `dashboard.sh` 或 KUAL 扩展里的脚本，在 KUAL 里先"停止仪表盘"再"启动仪表盘"，让新文件生效。
+2. 如果覆盖了 `dashboard.sh` 或 KUAL 扩展里的脚本，在 KUAL 里先"关闭仪表盘"再点对应方向的"开启"项，让新文件生效。
 3. Kindle 上那份 `config.env` 是你自己填好的，除非教程明确说明配置格式有变化，否则**不要**用仓库里的占位符版本覆盖它。
 
 ## 完成
