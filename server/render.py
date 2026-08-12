@@ -552,11 +552,11 @@ def build_landscape_image(cfg, result, hist, now):
     draw_calendar(d, fonts, 40, 500, 470, now)
     d.line([520, 40, 520, 1032], fill=LIGHT, width=2)
 
-    # 右栏：两块面板
+    # 右栏：两块面板（高 450，与竖屏一致，防止底部文字溢出框外）
     today = now.strftime("%Y-%m-%d")
-    draw_plan_panel(d, fonts, (540, 40, 1408, 480), "KIMI CODE", result["kimi"], now)
+    draw_plan_panel(d, fonts, (540, 40, 1408, 490), "KIMI CODE", result["kimi"], now)
     ds, _total, d_yesterday, d_today = _deepseek_args(result, hist, today)
-    draw_panel(d, fonts, (540, 520, 1408, 960), "DEEPSEEK", ds, d_yesterday, d_today)
+    draw_panel(d, fonts, (540, 510, 1408, 960), "DEEPSEEK", ds, d_yesterday, d_today)
 
     interval = cfg.get("FETCH_INTERVAL", "60")
     footer = f"渲染于 {now:%Y-%m-%d %H:%M} · 每 {interval} 秒更新"

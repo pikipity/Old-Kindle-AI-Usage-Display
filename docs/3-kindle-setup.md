@@ -57,8 +57,9 @@
 ├── warning.png
 ├── config.env
 └── icons/
-    ├── wifi-on.png
-    └── wifi-off.png
+    ├── wifi-on.png / wifi-off.png
+    ├── wifi-on-cw.png / wifi-off-cw.png
+    └── wifi-on-ccw.png / wifi-off-ccw.png
 /mnt/us/extensions/ai-dashboard/
 ├── config.xml
 ├── menu.json
@@ -72,7 +73,7 @@
 
 （`/mnt/us/dashboard/cache/` 和 `orientation` 标记文件不用手工建，脚本第一次运行/启动时会自己创建。）
 
-验证：对着上面的布局逐层点开检查，12 个文件一个不少、层级完全一致。
+验证：对着上面的布局逐层点开检查，16 个文件一个不少、层级完全一致。
 
 ### 第 3 步：在电脑上编辑 config.env
 
@@ -140,6 +141,7 @@ IMAGE_URL=http://YOUR_DOMAIN/kindle-dash-YOUR_TOKEN/dash.png
 | 点了"开启"项没反应，屏幕不变 | 脚本丢了执行权限（ZIP 解压再拷贝容易出现） | 用 USBNetwork 的 SSH 连上 Kindle（装法见 [1-jailbreak.md](1-jailbreak.md)），执行 `chmod +x /mnt/us/dashboard/dashboard.sh /mnt/us/extensions/ai-dashboard/bin/*.sh`，再回 KUAL 启动。若 chmod 不生效（`/mnt/us` 是 FAT 文件系统，权限位可能存不住），在 SSH 里手动执行 `sh /mnt/us/dashboard/dashboard.sh`，看实际报错再对症处理 |
 | 屏幕有画面，但顶部告警横幅一直不消失 | 持续拉取失败 | **先看左上角 WiFi 图标**：带斜杠 = WiFi 断了，重连 WiFi 即可；实心 = WiFi 正常，问题在服务器/远端——① 电脑浏览器访问 `IMAGE_URL`，打不开就逐字符核对 `config.env` 里的域名、token 与服务器 nginx 配置（含结尾的 `dash.png`）；② 服务器上 `pm2 logs` 看渲染程序是否还活着 |
 | 横屏后画面是倒的 | 顺/逆时针方向选反了 | 不用改任何文件：KUAL 里点另一个方向的"开启横屏仪表盘"即可（启动即切换） |
+| 屏幕顶部偶尔闪现系统状态栏（时间/信号/电池） | 系统框架每分钟整会重绘一次状态栏 | 脚本已对齐在每分钟第 2 秒刷屏，状态栏最多闪现 2 秒就被盖掉，属正常现象。想彻底消除只能停掉系统界面（`stop lab126_gui`），但 KUAL 也会消失、停止仪表盘只能重启设备，不建议为此折腾 |
 | 横幅偶尔出现又自己消失 | 网络偶发超时（脚本里 `wget` 超时设为 20 秒） | 偶发可以不管。频繁出现则查：服务器安全组/防火墙是否放行 80 端口、家里路由器是否开了 AP 隔离、宽带运营商到服务器的链路是否稳定 |
 | 画面有残影，字迹越看越灰 | 局部刷新累积的正常现象 | 把 `config.env` 里的 `FULL_REFRESH_EVERY` 调小（默认 60，可改成 30），即每 30 次刷新做一次全刷清残影。改完要在 KUAL 里停止再启动才生效 |
 | 屏幕上残留系统状态栏或菜单的影子 | 系统 UI 曾在仪表盘运行时弹出过 | 点一下屏幕或等下一次刷新一般会盖掉。进阶做法：SSH 里 `stop lab126_gui` 彻底停掉系统界面——但系统 UI 会完全消失，想恢复要 `start lab126_gui` 或重启，新手不建议碰 |

@@ -13,8 +13,6 @@ CACHE_IMG="$CACHE_DIR/dash.png"
 TMP_IMG="$CACHE_DIR/dash.tmp"
 WARN_IMG="$DIR/warning.png"
 ORIENTATION_FILE="$DIR/orientation"
-WIFI_ON_IMG="$DIR/icons/wifi-on.png"
-WIFI_OFF_IMG="$DIR/icons/wifi-off.png"
 PID_FILE="$DIR/dashboard.pid"
 
 # --- 读配置（KEY=VALUE 格式，直接 source） ---
@@ -66,17 +64,30 @@ current_url() {
     esac
 }
 
+# WiFi 图标：按方向选图标文件（横屏图标内容已随图旋转）和位置
+# 竖屏=左上；横屏两种方向都映射到"画面右上角"对应的帧缓冲坐标
+wifi_overlay() {
+    if wifi_up; then
+        icon="wifi-on"
+    else
+        icon="wifi-off"
+    fi
+    ori=$(cat "$ORIENTATION_FILE" 2>/dev/null)
+    case "$ori" in
+        landscape-cw)  f="$DIR/icons/$icon-cw.png";  x=44;  y=14 ;;
+        landscape-ccw) f="$DIR/icons/$icon-ccw.png"; x=988; y=1394 ;;
+        *)             f="$DIR/icons/$icon.png";     x=44;  y=14 ;;
+    esac
+    [ -f "$f" ] && "$FBINK" -q -b -g file="$f,x=$x,y=$y"
+}
+
 # 刷屏：$1=图片，$2=warn 时叠加告警横幅；WiFi 图标永远最后画
 show_screen() {
     "$FBINK" -q -b -g file="$1"
     if [ "$2" = "warn" ] && [ -f "$WARN_IMG" ]; then
         "$FBINK" -q -b -g file="$WARN_IMG"
     fi
-    if wifi_up; then
-        [ -f "$WIFI_ON_IMG" ] && "$FBINK" -q -b -g file="$WIFI_ON_IMG,x=44,y=14"
-    else
-        [ -f "$WIFI_OFF_IMG" ] && "$FBINK" -q -b -g file="$WIFI_OFF_IMG,x=44,y=14"
-    fi
+    wifi_overlay
     "$FBINK" -q -s -W GC16 $FLASH
 }
 
@@ -111,5 +122,14 @@ while true; do
         echo "$(date '+%F %T') 拉取失败且无缓存图，${FETCH_INTERVAL}s 后重试" >&2
     fi
 
-    sleep "$FETCH_INTERVAL"
+    # 默认 60s 间隔时对齐到每分钟第 2 秒再刷：系统状态栏在整分钟重绘，
+    # 我们晚它 2 秒刷屏把它盖掉，状态栏每次最多闪现 2 秒
+    if [ "$FETCH_INTERVAL" -eq 60 ]; then
+        s=$(date +%S); s=${s#0}; [ -z "$s" ] && s=0
+        n=$(( (62 - s) % 60 ))
+        [ "$n" -lt 5 ] && n=$((n + 60))
+        sleep "$n"
+    else
+        sleep "$FETCH_INTERVAL"
+    fi
 done

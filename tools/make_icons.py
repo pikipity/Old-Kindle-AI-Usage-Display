@@ -103,10 +103,14 @@ def make_sheet():
 
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    make_icon(STYLE, True).save(OUT_DIR / "wifi-on.png", optimize=True)
-    make_icon(STYLE, False).save(OUT_DIR / "wifi-off.png", optimize=True)
+    for state in ("on", "off"):
+        icon = make_icon(STYLE, state == "on")
+        icon.save(OUT_DIR / f"wifi-{state}.png", optimize=True)
+        # 横屏变体：图标内容随仪表盘同向旋转，横放时才是正的
+        icon.rotate(90, expand=True).save(OUT_DIR / f"wifi-{state}-cw.png", optimize=True)
+        icon.rotate(-90, expand=True).save(OUT_DIR / f"wifi-{state}-ccw.png", optimize=True)
     make_sheet()
-    print(f"已生成 {OUT_DIR}/wifi-on.png, wifi-off.png（样式 {STYLE}）")
+    print(f"已生成 {OUT_DIR}/wifi-{{on,off}}{{,-cw,-ccw}}.png（样式 {STYLE}）")
     print(f"候选对比图 {SHEET}")
 
 
